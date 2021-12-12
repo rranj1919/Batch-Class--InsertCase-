@@ -1,0 +1,6 @@
+
+
+Id batchJobId = Database.executeBatch(new CopyHistoryBatch(), 10);
+
+List<CustomCase__c> caselist = [Select id from CustomCase__c];
+delete caselist;
