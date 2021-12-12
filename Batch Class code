@@ -1,0 +1,83 @@
+global class CopyHistoryBatch implements Database.Batchable<sObject> {
+    public List<CaseHistory> caseHistoryList = new List<caseHistory>();
+    //public List<CustomCase__c> custObjList = new List<CustomCase__c>();
+    List<CaseMilestone> caseMilestone = [SELECT Id, ActualElapsedTimeInDays,ActualElapsedTimeInHrs,ActualElapsedTimeInMins,BusinessHoursId,CaseId FROM CaseMilestone];
+     
+    global Database.QueryLocator start(Database.BatchableContext bc)
+    {
+    String query= 'SELECT Id, CaseId, CreatedById, OldValue, NewValue, Field FROM CaseHistory';
+        // query='SELECT Id, ActualElapsedTimeInDays,ActualElapsedTimeInHrs,ActualElapsedTimeInMins,BusinessHoursId,CaseId FROM CaseMilestone';
+        System.debug('The Query returned is '+query);
+        return Database.getQueryLocator(query); 
+    }
+    global void execute(Database.BatchableContext bc, List<CaseHistory> scope)
+    {
+        List<CustomCase__c> custObjList = new List<CustomCase__c>();
+         List<CustomCase__c> customList = [Select Id__c,field__c,CaseId__c, OldValue__c,NewValue__c From CustomCase__c];
+        Set<String> Idset= new Set<String>();
+        for(CustomCase__c c: customList){
+            Idset.add(c.Id__c);
+        }
+       
+       
+        List<CaseHistory>  caseList= [SELECT Id, CaseId, CreatedById, OldValue, NewValue, Field FROM CaseHistory Where
+                                     Id Not In:Idset];
+        System.debug('caseList received  '+ caseList);
+List<CaseMilestone> caseMileList=[SELECT Id,TargetResponseInMins,TimeRemainingInDays,TimeRemainingInHrs,TimeRemainingInMins,
+                                  TimeSinceTargetInDays,TimeSinceTargetInHrs,TimeSinceTargetInMins,ElapsedTimeInDays,ElapsedTimeInHrs,ElapsedTimeInMins,
+                                  CompletionDate,MilestoneTypeId,StartDate,TargetDate,
+                                  isViolated,ActualElapsedTimeInHrs,ActualElapsedTimeInMins,BusinessHoursId,CaseId FROM
+                                  CaseMilestone Where Id Not In:Idset];
+        System.debug('caseMileList received is  '+caseMileList);
+      Integer d= caseList.Size();
+        System.debug('The side of d is '+d);
+        Integer b=caseMileList.Size();
+        System.debug('The Size of b is  '+b);
+        if(b>0){
+            System.debug(' befor loop ');
+        for(CaseMilestone m : caseMileList){
+            System.debug('ja raha ki nahi');
+            CustomCase__c  objCustomObject = new CustomCase__c  ();
+            objCustomObject.Id__c= m.Id;
+            objCustomObject.IsVoilated__c=String.valueOf(m.IsViolated);
+            objCustomObject.BusinessHoursId__c=m.BusinessHoursId;
+            objCustomObject.CaseId__c= m.CaseId;
+            objCustomObject.TargetResponseInMins__c = m.TargetResponseInMins;
+            objCustomObject.TimeRemainingInDays__c = m.TimeRemainingInDays;
+            objCustomObject.TimeRemainingInHrs__C= m.TimeRemainingInHrs;
+            objCustomObject.TimeRemainingInMins__c = m.TimeRemainingInMins;
+            objCustomObject.TimeSinceTargetInDays__c=m.TimeSinceTargetInDays;
+           // objCustomObject.TimeSinceTargetInHrs__C= m.TimeSinceTargetInHrs;
+            objCustomObject.BusinessHoursId__c = m.BusinessHoursId;
+            
+            custObjList.add(objCustomObject);
+             System.debug('The list is '+custObjList);
+        }
+            System.debug('outside loop');
+       // insert custObjList;
+        }
+        
+        if(d>0){
+        for(CaseHistory a : caseList)
+        {
+          
+            CustomCase__c  objCustomObject = new CustomCase__c  ();
+           // objCustomObject.name = a.name;
+            objCustomObject.CaseId__c = a.CaseId;
+           objCustomObject.Id__c = a.Id;
+            objCustomObject.OldValue__c=String.valueOf(a.OldValue);
+            objCustomObject.NewValue__c=String.valueOf(a.NewValue);
+            objCustomObject.Field__c= a.Field;
+           
+           custObjList.add(objCustomObject);
+        }
+        // insert custObjList;
+        }
+         insert custObjList;
+    }   
+  global void finish(Database.BatchableContext bc)
+    {
+     System.debug('gsjfkadjag');   
+    }
+        
+        }
